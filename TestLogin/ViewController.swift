@@ -34,20 +34,28 @@ class ViewController: UIViewController {
         let closeAction = UIAlertAction(title: "Close", style: .default)
         alert.addAction(closeAction)
         present(alert, animated: true)
-
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        guard let destination = segue.destination as? loggedInViewController,
+        guard let destination = segue.destination as? UITabBarController,
               let thisLogin = loginTextField.text,
-              let thisPassword = passwordTextField.text
+              let thisPassword = passwordTextField.text,
+              let viewControllers = destination.viewControllers
         else { return }
         guard let user = userList.users[thisLogin], user.password == thisPassword else {
-            showInfo("Invalid Login or Password!")
-            passwordTextField.text = ""
+            showInfo("Wrong Login or Password!")
+            self.passwordTextField.text = ""
             return
         }
-        destination.login = thisLogin
+        for viewController in viewControllers {
+            if let casted = viewController as? ViewControllerWithUserInfo {
+                casted.userInfo = user.userInfo
+            } else {
+                // Четвертый экран имеет тип обычного вью контроллера, то есть тут закрываем
+                //performSegue(withIdentifier: "loginSegue", sender: self)
+            }
+        }
+        
     }
     
     override func unwind(for unwindSegue: UIStoryboardSegue, towards subsequentVC: UIViewController) {
@@ -73,7 +81,8 @@ class ViewController: UIViewController {
 
 }
 
-// MARK: - Navigation
+// MARK: - !!! Вопрос к Никите !!!
+// Почему-то эта конструкция у меня не работает
 
 extension ViewController: UITextFieldDelegate {
     
@@ -86,11 +95,19 @@ extension ViewController: UITextFieldDelegate {
         if textField == loginTextField {
             passwordTextField.becomeFirstResponder()
         } else if textField == passwordTextField {
-            performSegue(withIdentifier: "loginSegue", sender: self)
+            //performSegue(withIdentifier: "loginSegue", sender: self)
         }
         return true
     }
     
 }
 
+
+// Я решил пойти другим путем - переопределил дочерние ViewControllers как новый класс, содержищий в себе
+// информацию о пользователе, из которого они будут брать нужные данные при загрузке View.
+class ViewControllerWithUserInfo: UIViewController {
+    
+    var userInfo: SingleUserInfo = .init()
+
+}
 

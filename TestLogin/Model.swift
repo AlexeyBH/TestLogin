@@ -54,7 +54,7 @@ struct UserAdress {
     var flat: String?
     
     var fullAdress: String {
-        var tmpAdress = String(format: "%000000", index) + ", "
+        var tmpAdress = String(index) + ", "
         if region != "Москва" && region != "Санкт-Петербург" {
             tmpAdress += region + ", " + district + "," + city + ", "
         } else {
@@ -70,7 +70,7 @@ struct UserAdress {
     
     // Квартира как строка, например, 12А
     init?(index: Int, region: String, district: String?, cityType: CityType, cityName: String, streetType: StreetType, streetName: String, house: String, flat: String?) {
-        if index > 0 && index < 999999 && region != "" && cityName != "" && streetName != "" && house != "" {
+        if index >= 100000 && index < 999999 && region != "" && cityName != "" && streetName != "" && house != "" {
             self.index = index
             self.region = region
             self.districtName = district
@@ -88,7 +88,7 @@ struct UserAdress {
     // Квартира как число
     init?(index: Int, region: String, district: String?, cityType: CityType, cityName: String, streetType: StreetType, streetName: String, house: String, flat: Int?) {
         if let tmpFlatInt = flat {
-            guard tmpFlatInt >= 0 && tmpFlatInt <= 100000 else { return nil }
+            guard tmpFlatInt > 0 && tmpFlatInt <= 100000 else { return nil }
             self.init(index: index, region: region, district: district, cityType: cityType, cityName: cityName, streetType: streetType, streetName: streetName, house: house, flat: String(tmpFlatInt))
         } else {
             // Чтобы избежать ошибки распознания конкретного инициализатора при передаче в него nil
@@ -100,21 +100,34 @@ struct UserAdress {
 
 // MARK: - User Info Definition
 
+// Проблема структуры в том что правильность значений проверяется только при инициализации...
 struct SingleUserInfo {
-    let isDeleted: Bool
-    let firstName: String
-    let surName: String
-    let password: String
-    let email: String?
-    let telegram: String?
-    let adress: UserAdress?
+    var isDeleted: Bool
+    var firstName: String
+    var surName: String
+    var password: String
+    var email: String?
+    var telegram: String?
+    var adress: UserAdress?
     
     private var hobbyList: [String]
+    
+    var fullName: String {
+        firstName + " " + surName
+    }
+    
+    var userInfo: SingleUserInfo {
+        self
+    }
     
     mutating func addHobby(_ hobby: String) {
         if !hobbyList.contains(hobby) {
             hobbyList.append(hobby)
         }
+    }
+    
+    var hobbies: [String] {
+        hobbyList
     }
     
     init?(firstName: String, surName: String, password: String, email: String? = nil, telegram: String? = nil, adress: UserAdress? = nil, hobbyList: [String] = []) {
@@ -143,17 +156,20 @@ struct SingleUserInfo {
         self = userInfo
     }
     
-    // MARK: - !!! Вопрос Никите !!!!
-    // Никита, интересно, такая практика допустима или это дурной код?
-    // За счет этого есть доступ к внутренним полям, но они могут быть изменены
-    // лишь с проверкой значений, при этом не используя кучу сеттеров.
-    mutating func update(userInfo: SingleUserInfo) -> Bool {
-        if let userInfo = .init(userInfo) {
-            self = userInfo
-            return true
-        } else {
-            return false
-        }
+    // Это явный "костыль", он нужен так как я в дочерние View передаю структуру SingleUserInfo и класс тут же ругается на отсутствие инициализатора
+    init() {
+        self.isDeleted = false
+        self.firstName = ""
+        self.surName = ""
+        self.password = ""
+        self.email = nil
+        self.telegram = nil
+        self.adress = nil
+        self.hobbyList = []
+    }
+    
+    mutating func update(_ userInfo: SingleUserInfo) {
+        self = userInfo
     }
 }
 
@@ -196,6 +212,16 @@ func FillUserData() -> UsersInfo {
     let nilString: String? = nil
     var users: UsersInfo = .init()
     _ = users.addUser(
+                  login: "KravtsovaA",
+                  firstName: "Анюта",
+                  surName: "Кравцова",
+                  password: ".KravtsovaA",
+                  email: "anita.kravtsova@mail.ru",
+                  telegram: nil,
+                  adress: .init(index: 107065, region: "Москва", district: nil, cityType: .city, cityName: "Москва", streetType: .highway, streetName: "Сахалинская", house: "7 к. 2", flat: 57),
+                  hobbyList: ["Алан", "Кот", "Бег", "Леша", "Питер"]
+                 )
+    _ = users.addUser(
                   login: "IvanovI",
                   firstName: "Иван",
                   surName: "Иванов",
@@ -212,7 +238,7 @@ func FillUserData() -> UsersInfo {
                   password: ".PetrovP",
                   email: "petrov.p@gmail.com",
                   telegram: "@petrov123",
-                  adress: .init(index: 123000, region: "Москва", district: nil, cityType: .city, cityName: "Москва", streetType: .highway, streetName: "Дмитровское", house: "1 к. 1", flat: 123),
+                  
                   hobbyList: ["Компьютерные игры", "Путешествия", "Программирование"]
                  )
     _ = users.addUser(
@@ -223,7 +249,7 @@ func FillUserData() -> UsersInfo {
                   email: "Elisova_AM@mail.ru",
                   telegram: nil,
                   adress: .init(index: 127591, region: "Московская область", district: "Истринский", cityType: .villageSmall, cityName: "Рождествено", streetType: .boulevard, streetName: "Сиреневый", house: "5", flat: 59),
-        hobbyList: ["Испанский язык", "Петешествия", "Шитье"]
+        hobbyList: ["Испанский язык", "Путешествия", "Шитье"]
                  )
     _ = users.addUser(
                   login: "SidorovP",
