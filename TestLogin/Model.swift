@@ -7,271 +7,152 @@
 
 import Foundation
 
-// MARK: - Adress definitions
+    
+// MARK: - Определение пользователя
 
-struct UserAdress {
-
-    var index: Int
-    var region: String
-    
-    enum CityType: String {
-        case city = "г."
-        case villageBig = "д."
-        case villageSmall = "c."
-        case villageCity = "пгт."
-    }
-    
-    private var districtName: String?
-    
-    var district: String {
-        districtName != nil ? districtName! + " р-н" : ""
-    }
-    
-    private var cityName: String
-    private var cityType: CityType
-    
-    var city: String {
-        cityType.rawValue + " " + cityName
-    }
-    
-    enum StreetType: String {
-        case avenue = "пр."
-        case street = "ул."
-        case lane = "пер."
-        case embankment = "наб."
-        case highway = "ш."
-        case boulevard = "бул."
-    }
-    
-    private var streetType: StreetType
-    private var streetName: String
-    
-    var street: String {
-        streetType.rawValue + " " + streetName
-    }
-    
-    var house: String
-    var flat: String?
-    
-    var fullAdress: String {
-        var tmpAdress = String(index) + ", "
-        if region != "Москва" && region != "Санкт-Петербург" {
-            tmpAdress += region + ", " + district + "," + city + ", "
-        } else {
-            tmpAdress += CityType.city.rawValue + " " + region + ", "
-        }
-        if let tmpFlat = flat {
-            return tmpAdress + street + ", д. " + house + ", кв. " + tmpFlat
-        } else {
-            return tmpAdress + street + ", д. " + house
-        }
-    }
-    
-    
-    // Квартира как строка, например, 12А
-    init?(index: Int, region: String, district: String?, cityType: CityType, cityName: String, streetType: StreetType, streetName: String, house: String, flat: String?) {
-        if index >= 100000 && index < 999999 && region != "" && cityName != "" && streetName != "" && house != "" {
-            self.index = index
-            self.region = region
-            self.districtName = district
-            self.cityType = cityType
-            self.cityName = cityName
-            self.streetType = streetType
-            self.streetName = streetName
-            self.house = house
-            self.flat = flat
-        } else {
-            return nil
-        }
-    }
-
-    // Квартира как число
-    init?(index: Int, region: String, district: String?, cityType: CityType, cityName: String, streetType: StreetType, streetName: String, house: String, flat: Int?) {
-        if let tmpFlatInt = flat {
-            guard tmpFlatInt > 0 && tmpFlatInt <= 100000 else { return nil }
-            self.init(index: index, region: region, district: district, cityType: cityType, cityName: cityName, streetType: streetType, streetName: streetName, house: house, flat: String(tmpFlatInt))
-        } else {
-            // Чтобы избежать ошибки распознания конкретного инициализатора при передаче в него nil
-            let nilStrFlat: String? = nil
-            self.init(index: index, region: region, district: district, cityType: cityType, cityName: cityName, streetType: streetType, streetName: streetName, house: house, flat: nilStrFlat)
-        }
-    }
-}
-
-// MARK: - User Info Definition
-
-// Проблема структуры в том что правильность значений проверяется только при инициализации...
 struct SingleUserInfo {
-    var isDeleted: Bool
+    enum Gender: String {
+        case male = "мужчина"
+        case female = "женщина"
+    }
+    var gender: Gender
     var firstName: String
     var surName: String
-    var password: String
     var email: String?
-    var telegram: String?
-    var adress: UserAdress?
-    
-    private var hobbyList: [String]
+    var phone: String?
     
     var fullName: String {
-        firstName + " " + surName
+        surName + " " + firstName
     }
-    
-    var userInfo: SingleUserInfo {
-        self
-    }
-    
-    mutating func addHobby(_ hobby: String) {
-        if !hobbyList.contains(hobby) {
-            hobbyList.append(hobby)
+    init? (firatName: String, surName: String, gender: Gender, email: String? = nil, phone: String? = nil) {
+        guard firatName != "", surName != "" else { return nil }
+        // Если почта задана, проверяем почту
+        if let emailUnwrapped = email {
+            guard emailUnwrapped.contains("@"), emailUnwrapped.contains(".") else { return nil }
         }
-    }
-    
-    var hobbies: [String] {
-        hobbyList
-    }
-    
-    init?(firstName: String, surName: String, password: String, email: String? = nil, telegram: String? = nil, adress: UserAdress? = nil, hobbyList: [String] = []) {
-        guard firstName != "", surName != "", password != "" else { return nil }
-        // MARK: - !!! Вопрос Никите !!!
-        // А такая проверка точно безопасная? с учетом "ленивости" вычислений в swift.
-        // Или лучше заморочиться с if let?
-        if (email != nil && !email!.contains("@") && !email!.contains(".")) || (telegram != nil && telegram!.first != "@") {
-            return nil
-        }
-        self.isDeleted = false
-        self.firstName = firstName
+        self.firstName = firatName
         self.surName = surName
-        self.password = password
+        self.gender = gender
         self.email = email
-        self.telegram = telegram
-        self.adress = adress
-        self.hobbyList = []
-        for hobby in hobbyList {
-            self.addHobby(hobby)
-        }
+        self.phone = phone
     }
     
-    init?(_ userInfo: SingleUserInfo) {
-        guard userInfo.firstName != "", userInfo.surName != "", userInfo.password != "", !userInfo.isDeleted else { return nil }
-        self = userInfo
-    }
     
-    // Это явный "костыль", он нужен так как я в дочерние View передаю структуру SingleUserInfo и класс тут же ругается на отсутствие инициализатора
-    init() {
-        self.isDeleted = false
-        self.firstName = ""
-        self.surName = ""
-        self.password = ""
-        self.email = nil
-        self.telegram = nil
-        self.adress = nil
-        self.hobbyList = []
-    }
-    
-    mutating func update(_ userInfo: SingleUserInfo) {
-        self = userInfo
-    }
 }
 
 struct UsersInfo {
-    // Словарь вида [login : userInfo]
-    var users: [String: SingleUserInfo]
+    // Словарь вида [fullUserName : userInfo]
+    var usersDict: [String: SingleUserInfo]
     
-    mutating func addUser(login: String, firstName: String, surName: String, password: String, email: String? = nil, telegram: String? = nil, adress: UserAdress? = nil, hobbyList: [String]) -> Bool {
-        guard login != "" else { return false }
-        if let userInfo = SingleUserInfo.init(firstName: firstName, surName: surName, password: password, email: email, telegram: telegram, adress: adress, hobbyList: hobbyList) {
-            return self.addUser(login: login, userInfo: userInfo)
+    mutating func addUser(_ userInfo: SingleUserInfo) -> Bool {
+        if usersDict[userInfo.fullName] == nil {
+            usersDict[userInfo.fullName] = userInfo
+            return true
         } else {
             return false
         }
     }
-
-    mutating func addUser(login: String, userInfo: SingleUserInfo) -> Bool {
-        if users[login] != nil {
-            return false
-        }
-        if let userInfo: SingleUserInfo = .init(userInfo) {
-            users[login] = userInfo
-        }
-        return true
+    
+    // MARK: !!! Вопрос Алексею !!!
+    // Рационально ли пользоваться таким вычисляемым значением?
+    // Или словарь будет заново мапиться и  сортироваться при каждом его вызове и для работы лучше хранить массив?
+    var asArray: [SingleUserInfo] {
+        let userData = usersDict.map {$0.value}
+        return userData.sorted {$0.fullName > $1.fullName}
+    }
+        
+    var count: Int {
+        usersDict.count
     }
     
     init() {
-        users = [:]
+        usersDict = [:]
     }
-
+    
 }
 
 
-// MARK: - User Data Init
-
-var userList = FillUserData()
-
+// MARK: - Заполнение таблицы пользователей
 
 func FillUserData() -> UsersInfo {
-    let nilString: String? = nil
     var users: UsersInfo = .init()
-    _ = users.addUser(
-                  login: "KravtsovaA",
-                  firstName: "Анюта",
-                  surName: "Кравцова",
-                  password: ".KravtsovaA",
-                  email: "anita.kravtsova@mail.ru",
-                  telegram: nil,
-                  adress: .init(index: 107065, region: "Москва", district: nil, cityType: .city, cityName: "Москва", streetType: .highway, streetName: "Сахалинская", house: "7 к. 2", flat: 57),
-                  hobbyList: ["Алан", "Кот", "Бег", "Леша", "Питер"]
-                 )
-    _ = users.addUser(
-                  login: "IvanovI",
-                  firstName: "Иван",
-                  surName: "Иванов",
-                  password: ".IvanovI",
-                  email: "ivanov122@mail.ru",
-                  telegram: nil,
-                  adress: nil,
-                  hobbyList: ["Плавание", "Бег"]
-                 )
-    _ = users.addUser(
-                  login: "PetrovP",
-                  firstName: "Петр",
-                  surName: "Петров",
-                  password: ".PetrovP",
-                  email: "petrov.p@gmail.com",
-                  telegram: "@petrov123",
-                  
-                  hobbyList: ["Компьютерные игры", "Путешествия", "Программирование"]
-                 )
-    _ = users.addUser(
-                  login: "ElisovaA",
-                  firstName: "Александра",
-                  surName: "Елисова",
-                  password: ".ElisovaA",
-                  email: "Elisova_AM@mail.ru",
-                  telegram: nil,
-                  adress: .init(index: 127591, region: "Московская область", district: "Истринский", cityType: .villageSmall, cityName: "Рождествено", streetType: .boulevard, streetName: "Сиреневый", house: "5", flat: 59),
-        hobbyList: ["Испанский язык", "Путешествия", "Шитье"]
-                 )
-    _ = users.addUser(
-                  login: "SidorovP",
-                  firstName: "Петр",
-                  surName: "Сидоров",
-                  password: ".SidorovP",
-                  email: "sidorov_p@gmail.com",
-                  telegram: "@petrov123",
-                  adress: .init(index: 542600, region: "Псковская область", district: "Порховский", cityType: .villageBig, cityName: "Москва", streetType: .street, streetName: "Ленина", house: "12", flat: nilString),
-                  hobbyList: ["Литрбол"]
-                 )
-    _ = users.addUser(
-                  login: "MaratovaM",
-                  firstName: "Мария",
-                  surName: "Маратова",
-                  password: ".MaratovaM",
-                  email: "maratova@inbox.ru",
-                  telegram: nil,
-        adress: .init(index: 148192, region: "Санкт-Петербург", district: nil, cityType: .city, cityName: "Санкт-Петербург", streetType: .avenue, streetName: "Мориса Торезе", house: "26", flat: 101),
-                  hobbyList: ["Пение", "Плавание", "Прогулки"]
-                 )
     
+    let minUsersCount = 30
+    let maxUsersCount = 50
+    
+    var usersCount = Int.random(in: minUsersCount...maxUsersCount)
+    
+    enum DependsOnGender {
+        case depends
+        case independs
+    }
+    
+    // [Имя: Пол]
+    let firstNamesData: [String: SingleUserInfo.Gender] = [
+        "Alexey": .male, "Ivan": .male, "Peter": .male, "Sergey": .male, "Nicolas": .male,
+        "Paul": .male, "Robinson": .male, "Anna": .female, "Irina": .female, "Paula": .female,
+        "Ekaterina": .female, "Natalia": .female, "Mark": .male, "Vanessa": .female,
+        "Nikolay": .male, "Alexandra": .female, "Inga": .female
+    ]
+    
+    // [Фамилия: Изменяемость_для_женщин] (например, Петров -> Таня Петрова или же Джексон -> Таня Джексон)
+    let surNamesData: [String: DependsOnGender] = [
+        "Ivanov": .depends, "Petrov": .depends, "Sidorov": .depends, "Markov": .depends,
+        "Brass": .independs, "Norris": .independs, "Chumakov": .depends, "Akulov": .depends,
+        "Elisov": .depends, "Koris": .independs, "Oort": .independs, "Skil": .independs,
+        "Ivashenko": .independs, "Pauliner": .independs, "Moose": .independs, "Garcia": .independs,
+        "Fernandez": .independs, "Gomes": .independs, "Rodriguez": .independs, "Smith": .independs,
+        "Williams": .independs, "Gibson": .independs, "Jackson": .independs, "Kuznetsov": .depends,
+        "Popov": .depends, "Orlov": .depends, "Nikitin": .depends, "Alekseev": .depends,
+        "Vorobiev": .depends, "Korolev": .depends, "Polyakov": .depends, "Tarasov": .depends
+    ]
+
+    // Добавляем пользователей пока количество успешных попыток (уникальных пользователей) не станет нулем.
+    while usersCount > 0 {
+        guard let firstNameData = firstNamesData.randomElement(),
+              let surNameData = surNamesData.randomElement()
+        else { break }
+        
+        
+        let firstName = firstNameData.key
+
+        let surName: String
+        
+        // В случае женщин и изменяемой фамилии, добавляем "а" в конец фамилиии
+        if firstNameData.value == .female && surNameData.value == .depends {
+            surName = surNameData.key + "a"
+        } else {
+            surName = surNameData.key
+        }
+        
+        // Делаем email.
+        let email: String?
+        if let mailDomain = ["gmail.com", "yahoo.com", "mail.ru", "yandex.ru", "protonmail.org"].randomElement() {
+            switch Bool.random() {
+            case true: email = firstName + "." + surName + "@" + mailDomain
+            case false: email = surName + String(Int.random(in: 0...100000)) + "@" + mailDomain
+            }
+        } else {
+            email = nil
+        }
+        
+        // Делаем телефон
+        let phoneNums = Array(0...9).map {(_: Int) -> String in String(Int.random(in: 0...9))}
+        let phone = "+7 (" + phoneNums[0...2].joined(separator: "") + ") " +
+            phoneNums[3...5].joined(separator: "") + "-" +
+            phoneNums[6...7].joined(separator: "") + "-" +
+            phoneNums[8...9].joined(separator: "")
+ 
+        if let userInfo = SingleUserInfo.init(firatName: firstName, surName: surName,
+                          gender: firstNameData.value, email: email, phone: phone) {
+            // Такого пользователя нет - уменьшаем счетчик
+            if users.addUser(userInfo) {
+               usersCount -= 1
+            }
+        }
+        
+    }
+
     return users
 }
 
