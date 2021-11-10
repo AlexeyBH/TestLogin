@@ -8,22 +8,23 @@
 import UIKit
 
 class MyTabBarControllerViewController: UITabBarController {
-
+    var userList: UsersInfo = FillUserData()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Загружаем данные пользователя в дочерние контроллеры
+        guard let viewControllers = self.viewControllers else { return }
+        
+        for viewController in viewControllers {
+            guard let controller = viewController as? UINavigationController else { return }
+            guard let item = controller.topViewController as? UserTableViewController else { return }
+            item.userList = userList
+        }
 
-        // Do any additional setup after loading the view.
     }
     
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
 }
+    
+
+
